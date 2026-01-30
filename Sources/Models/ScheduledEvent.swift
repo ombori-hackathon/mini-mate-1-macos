@@ -15,6 +15,20 @@ struct ScheduledEvent: Identifiable, Codable, Equatable {
         self.reminderMinutesBefore = reminderMinutesBefore
     }
 
+    // Custom decoder to handle old events without new fields
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        title = try container.decode(String.self, forKey: .title)
+        time = try container.decode(Date.self, forKey: .time)
+        notes = try container.decodeIfPresent(String.self, forKey: .notes)
+        reminderMinutesBefore = try container.decodeIfPresent(Int.self, forKey: .reminderMinutesBefore) ?? 5
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, title, time, notes, reminderMinutesBefore
+    }
+
     // Check if it's time to show this reminder (based on reminderMinutesBefore)
     var isTimeToRemind: Bool {
         let now = Date()
