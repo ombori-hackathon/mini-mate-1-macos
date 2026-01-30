@@ -61,6 +61,23 @@ class PreferencesStore {
         didSet { UserDefaults.standard.set(idleThresholdMinutes, forKey: "idleThresholdMinutes") }
     }
 
+    // Time-Based Hint Settings
+    var sessionDurationMinutes: Int {
+        didSet { UserDefaults.standard.set(sessionDurationMinutes, forKey: "sessionDurationMinutes") }
+    }
+
+    var breakIntervalMinutes: Int {
+        didSet { UserDefaults.standard.set(breakIntervalMinutes, forKey: "breakIntervalMinutes") }
+    }
+
+    var sameAppThresholdMinutes: Int {
+        didSet { UserDefaults.standard.set(sameAppThresholdMinutes, forKey: "sameAppThresholdMinutes") }
+    }
+
+    var enableSameAppHints: Bool {
+        didSet { UserDefaults.standard.set(enableSameAppHints, forKey: "enableSameAppHints") }
+    }
+
     private init() {
         // Load saved values or use defaults
         self.workSessionMinutes = UserDefaults.standard.object(forKey: "workSessionMinutes") as? Int ?? 30
@@ -76,6 +93,11 @@ class PreferencesStore {
         self.enableAnimations = UserDefaults.standard.object(forKey: "enableAnimations") as? Bool ?? true
         self.enableActivityTracking = UserDefaults.standard.object(forKey: "enableActivityTracking") as? Bool ?? true
         self.idleThresholdMinutes = UserDefaults.standard.object(forKey: "idleThresholdMinutes") as? Int ?? 5
+        // Time-based hints
+        self.sessionDurationMinutes = UserDefaults.standard.object(forKey: "sessionDurationMinutes") as? Int ?? 60
+        self.breakIntervalMinutes = UserDefaults.standard.object(forKey: "breakIntervalMinutes") as? Int ?? 30
+        self.sameAppThresholdMinutes = UserDefaults.standard.object(forKey: "sameAppThresholdMinutes") as? Int ?? 10
+        self.enableSameAppHints = UserDefaults.standard.object(forKey: "enableSameAppHints") as? Bool ?? true
     }
 
     func resetToDefaults() {
@@ -92,5 +114,10 @@ class PreferencesStore {
         enableAnimations = true
         enableActivityTracking = true
         idleThresholdMinutes = 5
+        // Time-based hints
+        sessionDurationMinutes = 60
+        breakIntervalMinutes = 30
+        sameAppThresholdMinutes = 10
+        enableSameAppHints = true
     }
 }

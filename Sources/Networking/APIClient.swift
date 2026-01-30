@@ -111,4 +111,41 @@ actor APIClient {
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         let _ = try await session.data(for: request)
     }
+
+    // Send time-based trigger for hints
+    func sendTimeTrigger(
+        triggerType: String,
+        appName: String?,
+        windowTitle: String?,
+        durationMinutes: Double,
+        breakNumber: Int?,
+        recentWindows: [String]?
+    ) async throws {
+        let url = baseURL.appendingPathComponent("hints/time-trigger")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        var body: [String: Any] = [
+            "device_id": deviceId,
+            "trigger_type": triggerType,
+            "duration_minutes": durationMinutes
+        ]
+
+        if let appName = appName {
+            body["app_name"] = appName
+        }
+        if let windowTitle = windowTitle {
+            body["window_title"] = windowTitle
+        }
+        if let breakNumber = breakNumber {
+            body["break_number"] = breakNumber
+        }
+        if let recentWindows = recentWindows {
+            body["recent_windows"] = recentWindows
+        }
+
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        let _ = try await session.data(for: request)
+    }
 }

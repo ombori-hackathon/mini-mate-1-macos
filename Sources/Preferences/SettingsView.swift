@@ -54,40 +54,40 @@ struct WorkSessionTab: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                // Work Session Section
-                SettingsSection(title: "Work Session", icon: "timer") {
+                // Session & Breaks Section
+                SettingsSection(title: "Session & Breaks", icon: "timer") {
                     SettingsRow(title: "Session Duration") {
                         HStack(spacing: 8) {
                             Slider(
                                 value: Binding(
-                                    get: { Double(preferences.workSessionMinutes) },
-                                    set: { preferences.workSessionMinutes = Int($0) }
+                                    get: { Double(preferences.sessionDurationMinutes) },
+                                    set: { preferences.sessionDurationMinutes = Int($0) }
                                 ),
-                                in: 1...100,
+                                in: 1...120,
                                 step: 1
                             )
                             .frame(width: 150)
 
-                            Text("\(preferences.workSessionMinutes) min")
+                            Text("\(preferences.sessionDurationMinutes) min")
                                 .font(.system(.body, design: .monospaced))
                                 .foregroundColor(.secondary)
                                 .frame(width: 60, alignment: .trailing)
                         }
                     }
 
-                    SettingsRow(title: "Break Duration") {
+                    SettingsRow(title: "Break Interval") {
                         HStack(spacing: 8) {
                             Slider(
                                 value: Binding(
-                                    get: { Double(preferences.breakDurationMinutes) },
-                                    set: { preferences.breakDurationMinutes = Int($0) }
+                                    get: { Double(preferences.breakIntervalMinutes) },
+                                    set: { preferences.breakIntervalMinutes = Int($0) }
                                 ),
-                                in: 1...30,
+                                in: 1...60,
                                 step: 1
                             )
                             .frame(width: 150)
 
-                            Text("\(preferences.breakDurationMinutes) min")
+                            Text("\(preferences.breakIntervalMinutes) min")
                                 .font(.system(.body, design: .monospaced))
                                 .foregroundColor(.secondary)
                                 .frame(width: 60, alignment: .trailing)
@@ -95,33 +95,47 @@ struct WorkSessionTab: View {
                     }
                 }
 
-                // Activity Tracking Section
-                SettingsSection(title: "Activity Tracking", icon: "chart.bar") {
-                    SettingsRow(title: "Track App Usage") {
-                        Toggle("", isOn: $preferences.enableActivityTracking)
-                            .labelsHidden()
-                    }
+                // Focus Hints Section
+                SettingsSection(title: "Focus Hints", icon: "clock.arrow.circlepath") {
+                    SettingsToggleRow(
+                        title: "Same-App Hints",
+                        subtitle: "Get tips when focused on one app",
+                        icon: "app.badge.checkmark",
+                        color: .blue,
+                        isOn: $preferences.enableSameAppHints
+                    )
 
-                    if preferences.enableActivityTracking {
-                        SettingsRow(title: "Idle Timeout") {
+                    if preferences.enableSameAppHints {
+                        SettingsRow(title: "Trigger After") {
                             HStack(spacing: 8) {
                                 Slider(
                                     value: Binding(
-                                        get: { Double(preferences.idleThresholdMinutes) },
-                                        set: { preferences.idleThresholdMinutes = Int($0) }
+                                        get: { Double(preferences.sameAppThresholdMinutes) },
+                                        set: { preferences.sameAppThresholdMinutes = Int($0) }
                                     ),
                                     in: 1...30,
                                     step: 1
                                 )
                                 .frame(width: 150)
 
-                                Text("\(preferences.idleThresholdMinutes) min")
+                                Text("\(preferences.sameAppThresholdMinutes) min")
                                     .font(.system(.body, design: .monospaced))
                                     .foregroundColor(.secondary)
                                     .frame(width: 60, alignment: .trailing)
                             }
                         }
                     }
+                }
+
+                // Activity Tracking Section
+                SettingsSection(title: "Activity Tracking", icon: "chart.bar") {
+                    SettingsToggleRow(
+                        title: "Track App Usage",
+                        subtitle: "Monitor which apps you use",
+                        icon: "chart.bar.xaxis",
+                        color: .purple,
+                        isOn: $preferences.enableActivityTracking
+                    )
                 }
             }
             .padding()
@@ -180,7 +194,7 @@ struct HintsTab: View {
                                     get: { Double(preferences.maxHintsPerHour) },
                                     set: { preferences.maxHintsPerHour = Int($0) }
                                 ),
-                                in: 1...20,
+                                in: 1...30,
                                 step: 1
                             )
                             .frame(width: 150)
@@ -199,7 +213,7 @@ struct HintsTab: View {
                                     get: { Double(preferences.hintDisplaySeconds) },
                                     set: { preferences.hintDisplaySeconds = Int($0) }
                                 ),
-                                in: 5...30,
+                                in: 1...60,
                                 step: 1
                             )
                             .frame(width: 150)

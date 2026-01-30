@@ -8,6 +8,7 @@ class HintService {
 
     private var pollTimer: Timer?
     private var lastShownHintId: Int = 0
+    private var preferences = PreferencesStore.shared
 
     func startPolling() {
         // Periodic polling as backup (app switches trigger immediate fetch)
@@ -23,13 +24,50 @@ class HintService {
         pollTimer = nil
     }
 
+    /// Check if a hint category is enabled in user preferences
+    private func isHintCategoryEnabled(_ category: HintCategory) -> Bool {
+        switch category {
+        case .breakReminder:
+            return preferences.enableBreakReminders
+        case .focusAlert:
+            return preferences.enableFocusAlerts
+        case .workflowTip:
+            return preferences.enableWorkflowTips
+        case .appSuggestion:
+            return preferences.enableAppTips
+        case .eventReminder:
+            return true  // Always show event reminders
+        }
+    }
+
+    /// Filter hints and dismiss disabled categories on server
+    private func filterAndDismissDisabledHints(_ hints: [Hint]) async -> [Hint] {
+        var enabledHints: [Hint] = []
+
+        for hint in hints {
+            if isHintCategoryEnabled(hint.category) {
+                enabledHints.append(hint)
+            } else {
+                // Dismiss disabled hint types on server so they don't keep coming back
+                Task {
+                    try? await APIClient.shared.updateHintStatus(hintId: hint.id, status: .dismissed)
+                }
+            }
+        }
+
+        return enabledHints
+    }
+
     func fetchHints() async {
         // Don't fetch if already showing a hint
         guard currentHint == nil else { return }
 
         do {
-            let hints = try await APIClient.shared.getPendingHints()
+            let allHints = try await APIClient.shared.getPendingHints()
             self.isConnected = true
+
+            // Filter by enabled categories and dismiss disabled ones
+            let hints = await filterAndDismissDisabledHints(allHints)
 
             // Only show new hints (not ones we've already shown)
             if let hint = hints.first, hint.id != lastShownHintId {
@@ -43,8 +81,11 @@ class HintService {
     // Called immediately after app switch - shows hint instantly
     func fetchHintsNow() async {
         do {
-            let hints = try await APIClient.shared.getPendingHints()
+            let allHints = try await APIClient.shared.getPendingHints()
             self.isConnected = true
+
+            // Filter by enabled categories and dismiss disabled ones
+            let hints = await filterAndDismissDisabledHints(allHints)
 
             // Show new hint, replacing current instantly
             if let hint = hints.first, hint.id != lastShownHintId {

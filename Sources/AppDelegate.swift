@@ -39,9 +39,69 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             activityMonitor.onAppSwitch = { [weak self] in
                 await self?.hintService.fetchHintsNow()
             }
+
+            // Same-app duration hint trigger
+            activityMonitor.onSameAppThreshold = { [weak self] appName, duration in
+                guard let self else { return }
+                do {
+                    try await APIClient.shared.sendTimeTrigger(
+                        triggerType: "same_app_duration",
+                        appName: appName,
+                        windowTitle: self.activityMonitor.activeWindowTitle,
+                        durationMinutes: duration / 60,
+                        breakNumber: nil,
+                        recentWindows: Array(self.activityMonitor.recentWindowTitles.prefix(5))
+                    )
+                    // Small delay then fetch hints
+                    try? await Task.sleep(nanoseconds: 500_000_000)
+                    await self.hintService.fetchHintsNow()
+                } catch {
+                    print("Failed to send same-app trigger: \(error)")
+                }
+            }
         }
 
         workSessionTracker.startSession()
+
+        // Break reminder trigger
+        workSessionTracker.onBreakDue = { [weak self] breakNumber, duration in
+            guard let self else { return }
+            do {
+                try await APIClient.shared.sendTimeTrigger(
+                    triggerType: "break_reminder",
+                    appName: nil,
+                    windowTitle: nil,
+                    durationMinutes: duration / 60,
+                    breakNumber: breakNumber,
+                    recentWindows: nil
+                )
+                // Small delay then fetch hints
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                await self.hintService.fetchHintsNow()
+            } catch {
+                print("Failed to send break reminder: \(error)")
+            }
+        }
+
+        // Session end trigger
+        workSessionTracker.onSessionEnd = { [weak self] duration in
+            guard let self else { return }
+            do {
+                try await APIClient.shared.sendTimeTrigger(
+                    triggerType: "session_end",
+                    appName: nil,
+                    windowTitle: nil,
+                    durationMinutes: duration / 60,
+                    breakNumber: nil,
+                    recentWindows: nil
+                )
+                // Small delay then fetch hints
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                await self.hintService.fetchHintsNow()
+            } catch {
+                print("Failed to send session end: \(error)")
+            }
+        }
         systemEventObserver.startObserving()
 
         // Connect event reminder to hint fetching

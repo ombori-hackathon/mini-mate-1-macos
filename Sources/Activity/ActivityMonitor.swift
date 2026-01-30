@@ -13,6 +13,7 @@ class ActivityMonitor {
 
     // Stuck/struggle detection
     var timeOnCurrentTask: TimeInterval = 0
+    var timeInCurrentApp: TimeInterval = 0  // Track time in same app (for same-app hints)
     var mightBeStuck: Bool = false
     var struggleScore: Int = 0  // Higher = more likely struggling
 
@@ -39,6 +40,11 @@ class ActivityMonitor {
 
     // Callback when app switches - used to fetch hints immediately
     var onAppSwitch: (() async -> Void)?
+
+    // Time-based hint triggers
+    var onSameAppThreshold: ((String, TimeInterval) async -> Void)?  // (appName, duration)
+    private var lastSameAppHintTime: Date?
+    private var sameAppHintTriggered: Bool = false  // Prevent repeated triggers for same session
 
     private var pollTimer: Timer?
     private var activityBuffer: [ActivityReportItem] = []
@@ -86,6 +92,29 @@ class ActivityMonitor {
         updateActiveApp()
         updateWindowTitle()
         checkIfStuck()
+        checkTimeBasedTriggers()
+    }
+
+    private func checkTimeBasedTriggers() {
+        let prefs = PreferencesStore.shared
+
+        // Same-app duration hint
+        guard prefs.enableSameAppHints else { return }
+
+        let threshold = TimeInterval(prefs.sameAppThresholdMinutes * 60)
+
+        // Update time in current app
+        timeInCurrentApp = Date().timeIntervalSince(lastAppChange)
+
+        // Check if we've been in the same app long enough
+        if timeInCurrentApp >= threshold && !sameAppHintTriggered {
+            sameAppHintTriggered = true
+            print("⏱️ SAME-APP THRESHOLD: \(Int(timeInCurrentApp/60)) min in \(activeAppName)")
+
+            Task {
+                await onSameAppThreshold?(activeAppName, timeInCurrentApp)
+            }
+        }
     }
 
     private func updateIdleTime() {
@@ -159,6 +188,7 @@ class ActivityMonitor {
                 lastWindowTitle = ""
                 windowTitleStartTime = Date()
                 mightBeStuck = false
+                sameAppHintTriggered = false  // Reset time-based hint trigger for new app
 
                 // Report app switch immediately for instant hints!
                 Task {
